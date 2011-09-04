@@ -68,19 +68,9 @@ cursor = connection.cursor()
 messages = [ ]
 
 number = sys.argv[1]
-query = "select * from message where address=? order by date"
+query = "select * from message where address like ? order by date"
 
-cursor.execute(query, (number,))
-for row in cursor:
-    messages.append(row)
-
-number = "1" + number
-cursor.execute(query, (number,))
-for row in cursor:
-    messages.append(row)
-
-number = "+" + number
-cursor.execute(query, (number,))
+cursor.execute(query, ("%{0}".format(number),))
 for row in cursor:
     messages.append(row)
 
