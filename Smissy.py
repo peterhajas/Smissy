@@ -59,12 +59,7 @@ for directory in os.listdir(pathToBackups):
 connection = sqlite3.connect(largestBackupAbsolutePath)
 cursor = connection.cursor()
 
-# Grab all the lines for conversations with the number
-# Now, due to the way the message database is saved, we'll need the following:
-#  - Just the number, sans country code or country code delimeter:   2345678900
-#  - The number with the country code prepended:                    12345678900
-#  - Finally, the number with both the country code and delimeter: +12345678900
-
+# Grab all the lines for conversations with the given number suffix
 messages = [ ]
 
 number = sys.argv[1]
