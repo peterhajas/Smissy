@@ -125,7 +125,6 @@ htmlFile.write("""
                 color:#777;
                 text-align: center;
                 clear:both;
-                float: left, right;
             }
         </style>
     </head>
