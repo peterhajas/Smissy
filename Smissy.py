@@ -33,6 +33,7 @@ import time
 import BaseHTTPServer
 import re
 import json
+from collections import defaultdict
 from operator import itemgetter, attrgetter
 
 PORT_NUMBER = 8080
@@ -104,7 +105,7 @@ def lookup_messages(number):
 
 def list_conversations():
     cursor.execute("select address from message")
-    addresses = {}
+    addresses = defaultdict(int)
     for address in cursor:
         address = address[0]
         if address:
@@ -119,8 +120,8 @@ def list_conversations():
             if len(address) > 7:
                 address = address[-7:]
 
-            addresses[address] = 1
-    return [k for k in addresses.keys() if k]
+            addresses[address] += 1
+    return [[k,v] for k,v in addresses.iteritems() if k and v]
 
 class SmissyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_HEAD(s):

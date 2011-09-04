@@ -84,6 +84,7 @@
                 padding: 5px;
                 margin: 1px;
                 background-color: #ccc;
+                font-weight: bold;
             }
 
             .address:hover
@@ -91,33 +92,53 @@
                 color: #888;
                 cursor: hand;
             }
+
+            .addressCount
+            {
+                float: right;
+                background-color: #ddd;
+                border-radius: 10px;
+                border: 1px solid #aaa;
+                padding: 0px 8px;
+                font-size: 0.8em;
+                font-weight: normal;
+            }
         </style>
         <script src="/jquery.js"></script>
         <script>
             function loadConversation(address)
             {
                 $.getJSON('/conversation/' + address.replace("[^0-9]", ""), function(data) {
-                  $("#conversation").empty();
+                    $("#conversation").empty();
 
-                  $.each(data, function(val) {
-                      $("<div/>", {
-                          html: data[val][1],
-                          class: "message " + (data[val][0] ? "outgoing" : "incoming")
-                      }).appendTo("#conversation")
-                  });
+                    $.each(data, function(val) {
+                        $("<div/>", {
+                            html: data[val][1],
+                            class: "message " + (data[val][0] ? "outgoing" : "incoming")
+                        }).appendTo("#conversation")
+                    });
                 });
             }
 
             function loadConversations()
             {
                 $.getJSON('/conversation', function(data) {
-                  var items = [];
+                    var items = [];
 
-                  $.each(data, function(val) {
-                    items.push('<div class="address" id="' + data[val] + '" onclick="loadConversation(\'' + data[val] + '\')">' + data[val] + '</div>');
-                  });
+                    $.each(data, function(val) {
+                        address = data[val][0];
+                        prettyAddress = address;
+                        addressCount = data[val][1];
 
-                  $('#conversationList').html(items.join(''));
+                        if(prettyAddress.length == 7)
+                        {
+                            prettyAddress = prettyAddress.slice(0,3) + "-" + prettyAddress.slice(3);
+                        }
+
+                        items.push('<div class="address" id="' + address + '" onclick="loadConversation(\'' + address + '\')">' + prettyAddress + '<div class="addressCount">' + addressCount + '</div></div>');
+                    });
+
+                    $('#conversationList').html(items.join(''));
                 });
             }
         </script>
