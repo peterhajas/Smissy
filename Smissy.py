@@ -26,7 +26,6 @@
 import sqlite3
 import sys
 import os
-import subprocess
 import datetime
 from operator import itemgetter, attrgetter
 
