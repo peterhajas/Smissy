@@ -59,15 +59,13 @@ for directory in os.listdir(pathToBackups):
 connection = sqlite3.connect(largestBackupAbsolutePath)
 cursor = connection.cursor()
 
-# Grab all the lines for conversations with the given number suffix
-messages = [ ]
-
 number = sys.argv[1]
 query = "select * from message where address like ? order by date"
 
+# Grab all the lines for conversations with the given number suffix
+
 cursor.execute(query, ("%{0}".format(number),))
-for row in cursor:
-    messages.append(row)
+messages = cursor.fetchall()
 
 if len(messages) == 0:
     print "No messages found for that number"
