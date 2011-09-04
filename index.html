@@ -1,0 +1,133 @@
+<html>
+    <head>
+        <title>SMS Log Viewer</title>
+        <style type='text/css'>
+            html
+            {
+                height: 100%;
+                overflow: hidden;
+            }
+
+            body
+            {
+                font-family: Helvetica;
+            }
+
+            .message
+            {
+                border-radius: 15px 15px;
+                background-color: #EEE;
+                border: 1px solid #AAA;
+                padding: 5px 15px;
+                margin: 5px;
+                color: #000;
+                display: table-cell;
+                text-shadow: -1px 1px 0px rgba(255,255,255,0.5);
+                max-width: 70%;
+                clear: both;
+            }
+
+            .incoming
+            {
+                background-image: -webkit-linear-gradient(#FFF, #CCC);
+                float: left;
+            }
+
+            .outgoing
+            {
+                background-image: -webkit-linear-gradient(#CEA, #8B8);
+                float: right;
+            }
+
+            .date
+            {
+                color: #777;
+                text-align: center;
+                clear: both;
+            }
+
+            #conversationList
+            {
+                position: fixed;
+                overflow: scroll;
+                left: 0px;
+                top: 0px;
+                bottom: 0px;
+                width: 20%;
+                background-color: #999;
+                margin: 0px;
+                padding: 0px;
+                border-right: 1px #666;
+            }
+
+            #conversationWrapper
+            {
+                position: fixed;
+                left: 20%;
+                top: 0px;
+                bottom: 0px;
+                right: 0px;;
+                background-color: #eee;
+                padding: 0px 10px;
+                overflow: scroll;
+            }
+
+            #conversation
+            {
+                clear: both;
+                height: auto;
+            }
+
+            .address
+            {
+                list-style-type: none;
+                padding: 5px;
+                margin: 1px;
+                background-color: #ccc;
+            }
+
+            .address:hover
+            {
+                color: #888;
+                cursor: hand;
+            }
+        </style>
+        <script src="/jquery.js"></script>
+        <script>
+            function loadConversation(address)
+            {
+                $.getJSON('/conversation/' + address.replace("[^0-9]", ""), function(data) {
+                  $("#conversation").empty();
+
+                  $.each(data, function(val) {
+                      $("<div/>", {
+                          html: data[val][1],
+                          class: "message " + (data[val][0] ? "outgoing" : "incoming")
+                      }).appendTo("#conversation")
+                  });
+                });
+            }
+
+            function loadConversations()
+            {
+                $.getJSON('/conversation', function(data) {
+                  var items = [];
+
+                  $.each(data, function(val) {
+                    items.push('<div class="address" id="' + data[val] + '" onclick="loadConversation(\'' + data[val] + '\')">' + data[val] + '</div>');
+                  });
+
+                  $('#conversationList').html(items.join(''));
+                });
+            }
+        </script>
+    </head>
+    <body onload="loadConversations()">
+        <div id="conversationList">
+        </div>
+        <div id="conversationWrapper">
+            <div id="conversation">
+            </div>
+        </div>
+    </body>
+</html>
