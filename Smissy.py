@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright (c) 2011, Peter Hajas
 # All rights reserved.
 
@@ -27,144 +29,153 @@ import sqlite3
 import sys
 import os
 import datetime
+import time
+import BaseHTTPServer
+import re
+import json
+from collections import defaultdict
 from operator import itemgetter, attrgetter
 
-# Check arguments
-if len(sys.argv) < 2:
-    print "Please run Smissy with a number, including area code."
-    print "For example, 2345678900 for the number 1-(234)-567-8900"
-    quit()
+PORT_NUMBER = 8080
 
 pathToBackups = "~/Library/Application Support/MobileSync/Backup/"
 pathToBackups = os.path.expanduser(pathToBackups)
 
-# Find all the directories that have the SMS backup file (3d0d7e5fb2ce288813306e4d4636395e047a3d28) in them
-# We'll use these to find the largest SMS backup file
+# This is a terrible way to serve static files, but it'll do
+indexFile = open("index.html", "r")
+indexContent = indexFile.read()
+indexFile.close()
 
-directoriesContainingSMSBackups = [ ]
-largestBackupBytes = 0
-largestBackupAbsolutePath = ""
+jqueryFile = open("jquery.js", "r")
+jqueryContent = jqueryFile.read()
+jqueryFile.close()
 
-for directory in os.listdir(pathToBackups):
-    pathToBackupFile = pathToBackups + directory + "/" + "3d0d7e5fb2ce288813306e4d4636395e047a3d28"
-    if os.path.exists(pathToBackupFile):
-        directoriesContainingSMSBackups.append(directory)
-        if os.path.getsize(pathToBackupFile) > largestBackupBytes:
-            largestBackupBytes = os.path.getsize(pathToBackupFile)
-            largestBackupAbsolutePath = pathToBackupFile
 
-# Now that we have the largest SMS backup that they have, we'll load the database
+def find_backup():
+    # Find all the directories that have the SMS backup file (3d0d7e5fb2ce288813306e4d4636395e047a3d28) in them
+    # We'll use these to find the largest SMS backup file
 
-connection = sqlite3.connect(largestBackupAbsolutePath)
-cursor = connection.cursor()
+    directoriesContainingSMSBackups = [ ]
+    largestBackupBytes = 0
+    largestBackupAbsolutePath = ""
 
-number = sys.argv[1]
-query = "select * from message where address like ? order by date"
+    for directory in os.listdir(pathToBackups):
+        pathToBackupFile = os.path.join(pathToBackups, directory, "3d0d7e5fb2ce288813306e4d4636395e047a3d28")
+        if os.path.exists(pathToBackupFile):
+            directoriesContainingSMSBackups.append(directory)
+            if os.path.getsize(pathToBackupFile) > largestBackupBytes:
+                largestBackupBytes = os.path.getsize(pathToBackupFile)
+                largestBackupAbsolutePath = pathToBackupFile
 
-# Grab all the lines for conversations with the given number suffix
+    # Now that we have the largest SMS backup that they have, we'll load the database
 
-cursor.execute(query, ("%{0}".format(number),))
-messages = cursor.fetchall()
+    connection = sqlite3.connect(largestBackupAbsolutePath)
+    cursor = connection.cursor()
 
-if len(messages) == 0:
-    print "No messages found for that number"
-    exit()
+    return cursor
 
-# Sort by time (the 2 index in the database row)
+def lookup_messages(number):
+    query = "select text,date,flags from message where address like ? order by date"
 
-sortedMessages = sorted(messages, key=itemgetter(2))
+    # Grab all the lines for conversations with the given number suffix
 
-# A fake last message date, to make output more sanitary
+    cursor.execute(query, ("%{0}".format(number),))
+    messages = cursor.fetchall()
 
-lastMessageDate = datetime.datetime.fromtimestamp(0)
+    if len(messages) == 0:
+        return []
 
-# Create the html file, and write the CSS and html beginnings to it
+    # Sort by time (the 1 index in the database row)
 
-filename = os.path.join(os.getcwd(), sys.argv[1] + ".html")
-htmlFile = open(filename, 'w')
+    sortedMessages = sorted(messages, key=itemgetter(1))
 
-htmlFile.write("""
-<html>
-    <head>
-        <title>Messages from {0}</title>""".format(number))
-htmlFile.write("""
-        <style type='text/css'>
-            body
-            {
-                font-family: Helvetica;
-                max-width: 768px;
-                margin-left: auto;
-                margin-right: auto;
-            }
-            .message
-            {
-                border-radius: 15px 15px;
-                background-color: #EEE;
-                border: 1px solid #AAA;
-                padding: 5px 15px;
-                margin: 5px;
-                color: #000;
-                display: table-cell;
-                text-shadow: -1px 1px 0px rgba(255,255,255,0.5);
-                max-width: 70%;
-                clear:both;
-            }
-            .incoming
-            {
-                background-image: -webkit-linear-gradient(#FFF, #CCC);
-                float: left;
-            }
-            .outgoing
-            {
-                background-image: -webkit-linear-gradient(#CEA, #8B8);
-                float: right;
-            }
-            .date
-            {
-                color:#777;
-                text-align: center;
-                clear:both;
-            }
-        </style>
-    </head>
-    <body>""")
+    messageObject = []
 
-for message in sortedMessages:
+    for message in sortedMessages:
+        text = message[0]
 
-    if message[4] & 1:
-        sender = "You"
-    else:
-        sender = "Them"
+        if not text:
+            text = "[MMS / Invalid Entry]"
+        else:
+            text = text.encode('utf-8')
 
-    date = datetime.datetime.fromtimestamp(message[2])
+        messageObject.append([message[2] & 1, text, message[1]])
 
-    text = message[3]
+    return messageObject
 
-    # If more than 15 minutes have passed, show the date
+def list_conversations():
+    cursor.execute("select address from message")
+    addresses = defaultdict(int)
+    for address in cursor:
+        address = address[0]
+        if address:
+            # Remove uninteresting characters (non-digits)
 
-    delta = date - lastMessageDate
-    if delta.seconds > 600:
-        dateString = date.strftime('%b %d, %Y %I:%M')
-        htmlFile.write("        <div class='date'>" + dateString + "</div>\n")
+            address = re.sub("[^0-9]", "", address)
 
-    if not text:
-        text = "[MMS / Invalid Entry]"
-    else:
-        text = text.encode('utf-8')
+            # Strip area code
+            # This could cause collisions, but it seems unlikely,
+            # or more likely that they're useful collisions
 
-    if message[4] & 1:
-        htmlFile.write("        <div class='message outgoing'>" + text + "</div>\n")
-    else:
-        htmlFile.write("        <div class='message incoming'>" + text + "</div>\n")
+            if len(address) > 7:
+                address = address[-7:]
 
-    lastMessageDate = date
+            addresses[address] += 1
+    return [[k,v] for k,v in addresses.iteritems() if k and v]
 
-htmlFile.write("""
-    </body>
-</html>""")
+class SmissyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    def do_HEAD(s):
+        s.send_response(200)
+        s.send_header("Content-type", "text/html")
+        s.end_headers()
+    def do_GET(s):
+        if s.path == "/":
+            s.send_response(200)
+            s.send_header("Content-type", "text/html")
+            s.end_headers()
+            s.wfile.write(indexContent)
+            return
 
-# Close the file
-htmlFile.close()
+        if s.path == "/jquery.js":
+            s.send_response(200)
+            s.send_header("Content-type", "application/x-javascript")
+            s.end_headers()
+            s.wfile.write(jqueryContent)
+            return
 
-# Finally, call open on the file to open it in the default browser
-os.system("open {0}".format(filename))
+        conversationRequest = re.match(r"\/conversation\/([0-9]+)$", s.path)
+        if conversationRequest:
+            s.send_response(200)
+            s.send_header("Content-type", "application/json")
+            s.end_headers()
+            s.wfile.write(json.dumps(lookup_messages(conversationRequest.group(1))))
+            return
+
+        conversationIndexRequest = re.match(r"\/conversation\/?$", s.path)
+        if conversationIndexRequest:
+            s.send_response(200)
+            s.send_header("Content-type", "application/json")
+            s.end_headers()
+            s.wfile.write(json.dumps(list_conversations()))
+            return
+
+        s.send_response(404)
+        s.send_header("Content-type", "text/html")
+        s.end_headers()
+        s.wfile.write("Unknown resource.")
+
+if __name__ == '__main__':
+    global cursor
+    cursor = find_backup()
+
+    httpd = BaseHTTPServer.HTTPServer(("", PORT_NUMBER), SmissyHandler)
+    print time.asctime(), "Server Starts - Port {0}".format(PORT_NUMBER)
+    # Open the interface in the default browser
+    os.system("open {0}".format("http://localhost:{0}".format(PORT_NUMBER)))
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    httpd.server_close()
+    print time.asctime(), "Server Stops - Port {0}".format(PORT_NUMBER)
+
