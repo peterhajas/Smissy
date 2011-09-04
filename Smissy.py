@@ -83,7 +83,7 @@ lastMessageDate = datetime.datetime.fromtimestamp(0)
 
 # Create the html file, and write the CSS and html beginnings to it
 
-filename = os.getcwd() + "/" + sys.argv[1] + ".html"
+filename = os.path.join(os.getcwd(), sys.argv[1] + ".html")
 htmlFile = open(filename, 'w')
 
 htmlFile.write("""
