@@ -87,6 +87,8 @@ htmlFile = open(filename, 'w')
 htmlFile.write("""
 <html>
     <head>
+        <title>Messages from {0}</title>""".format(number))
+htmlFile.write("""
         <style type='text/css'>
             body
             {
