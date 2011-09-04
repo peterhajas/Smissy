@@ -22,7 +22,7 @@ Smissy currently only runs on OS X.
 Usage
 -----
 
-Simply run Smissy with a phone number, including area code. For example:
+Simply run Smissy with a phone number, and optionally an area code. For example:
 
 `python Smissy.py 2345678900`
 

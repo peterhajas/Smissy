@@ -19,7 +19,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Smissy, a utility for visualizing logs on your phone.
-# Just run with a phone number and area code, like this:
+# Just run with a phone number and optional area code, like this:
 # $ python Smissy.py 2345678900
 # and Smissy will make an HTML file for you in the current directory and open it
 
