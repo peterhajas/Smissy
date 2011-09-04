@@ -173,10 +173,5 @@ htmlFile.write("""
 # Close the file
 htmlFile.close()
 
-# Finally, call open on the file to open it in Safari
-command = "open %s" % (filename)
-returnValue = subprocess.Popen(command, shell=True)
-returnValue.wait()
-
-quit()
-
+# Finally, call open on the file to open it in the default browser
+os.system("open {0}".format(filename))
