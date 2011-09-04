@@ -59,12 +59,7 @@ for directory in os.listdir(pathToBackups):
 connection = sqlite3.connect(largestBackupAbsolutePath)
 cursor = connection.cursor()
 
-# Grab all the lines for conversations with the number
-# Now, due to the way the message database is saved, we'll need the following:
-#  - Just the number, sans country code or country code delimeter:   2345678900
-#  - The number with the country code prepended:                    12345678900
-#  - Finally, the number with both the country code and delimeter: +12345678900
-
+# Grab all the lines for conversations with the given number suffix
 messages = [ ]
 
 number = sys.argv[1]
@@ -88,7 +83,7 @@ lastMessageDate = datetime.datetime.fromtimestamp(0)
 
 # Create the html file, and write the CSS and html beginnings to it
 
-filename = os.getcwd() + "/" + sys.argv[1] + ".html"
+filename = os.path.join(os.getcwd(), sys.argv[1] + ".html")
 htmlFile = open(filename, 'w')
 
 htmlFile.write("""
@@ -173,10 +168,5 @@ htmlFile.write("""
 # Close the file
 htmlFile.close()
 
-# Finally, call open on the file to open it in Safari
-command = "open %s" % (filename)
-returnValue = subprocess.Popen(command, shell=True)
-returnValue.wait()
-
-quit()
-
+# Finally, call open on the file to open it in the default browser
+os.system("open {0}".format(filename))
