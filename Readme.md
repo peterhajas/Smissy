@@ -24,7 +24,7 @@ Usage
 
 Simply run Smissy with a phone number, including area code. For example:
 
-`python Smitty.py 2345678900`
+`python Smissy.py 2345678900`
 
 and Smissy will take care of the rest. After the HTML file has been created, it
 will automatically open in your default browser.
