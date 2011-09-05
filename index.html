@@ -200,7 +200,13 @@
                             prettyAddress = prettyAddress.slice(0,3) + "-" + prettyAddress.slice(3);
                         }
 
-                        items.push([addressCount, '<div class="address" id="' + address + '" onclick="loadConversation(\'' + address + '\')"><span class="number">' + prettyAddress + '</span><div class="addressCount">' + addressCount + '</div></div>']);
+						name = data[val][2];
+						if(name == "")
+						{
+							name = prettyAddress;
+						}
+
+                        items.push([addressCount, '<div class="address" id="' + address + '" onclick="loadConversation(\'' + address + '\')"><span class="number">' + name + '</span><div class="addressCount">' + addressCount + '</div></div>']);
                     });
 
                     function reverseSortFirstNumber(a,b)

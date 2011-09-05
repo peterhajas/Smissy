@@ -40,6 +40,8 @@ PORT_NUMBER = 8080
 pathToBackups = "~/Library/Application Support/MobileSync/Backup/"
 pathToBackups = os.path.expanduser(pathToBackups)
 
+backupDirectory = ""
+
 staticCache = {}
 
 def load_static_file(filename):
@@ -58,9 +60,8 @@ def serve_static_file(s, path, filename, mime):
         return True
     return False
 
-backupDirectory = ""
-
 def find_backup():
+    global backupDirectory
     # Find all the directories that have the SMS backup file (3d0d7e5fb2ce288813306e4d4636395e047a3d28) in them
     # We'll use these to find the largest SMS backup file
 
@@ -83,6 +84,13 @@ def find_backup():
     cursor = connection.cursor()
 
     return cursor
+    
+def find_addressbook():
+    path = os.path.join(backupDirectory, "31bb7ba8914766d4ba40d6dfb6113c8b614be442")
+    print path
+    nameConnection = sqlite3.connect(path)
+    nameCursor = nameConnection.cursor()
+    return nameCursor
 
 def lookup_messages(number):
     query = "select text,date,flags from message where address like ? order by date"
@@ -119,10 +127,12 @@ def list_conversations():
     for address in cursor:
         address = address[0]
         if address:
+            
+            name = name_for_number(address)
+            
             # Remove uninteresting characters (non-digits)
 
             address = re.sub("[^0-9]", "", address)
-            name = "hello"
 
             # Strip area code
             # This could cause collisions, but it seems unlikely,
@@ -140,31 +150,37 @@ def list_conversations():
     return [[k,v[0],v[1]] for k,v in addresses.iteritems() if k and v]
 
 def name_for_number(number):
-    # Okay, this is gross.
-    # The number we receive will have no dashes or anything, we need to query several versions of this number.
-    # For example, for the number 2345678900, we need to query for every variation of that number
+    # Look up the number in the database of contacts
     
-    name = name_for_address_string(number)
-    if name:
-        return name
-    
-    # Prepend a 1
-    name = name_for_address_string("1" + number)
-    if name:
-        return name
-        
-    # Prepend a +1
-    name = name_for_address_string("+1" + number)
-    if name:
-        return name
+    query = "select record_id from ABMultiValue where value like ?"
+    nameCursor.execute(query, ("%{0}".format(number),))
+    fetch = nameCursor.fetchone()
+    if not fetch:
+        return number
+    record_id = fetch[0]
 
-def name_for_address_string(addressString):
-    nameConnection = sqlite3.connect(os.path.join(backupDirectory, "31bb7ba8914766d4ba40d6dfb6113c8b614be442"))
-    nameCursor = nameConnection.cursor()
-    query = "select record_id where value like ?"
-    nameCursor.execute(query, ("%{0}".format(addressString),))
-    for row in nameCursor.rows:
-        print row
+    query = "select First from ABPerson where ROWID like ?"
+    nameCursor.execute(query, ("%{0}".format(record_id),))
+    fetch = nameCursor.fetchone()
+    if not fetch:
+        firstName = ""
+    else:
+        firstName = fetch[0]
+    
+    query = "select Last from ABPerson where ROWID like ?"
+    nameCursor.execute(query, ("%{0}".format(record_id),))
+    fetch = nameCursor.fetchone()
+    if not fetch:
+        if firstName == "":
+            return number
+        else:
+            return firstName
+    else:
+        lastName = fetch[0]
+        if not lastName:
+            return firstName
+        return firstName + " " + lastName
+        
 
 class SmissyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_HEAD(s):
@@ -201,7 +217,9 @@ class SmissyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     global cursor
+    global nameCursor
     cursor = find_backup()
+    nameCursor = find_addressbook()
 
     httpd = BaseHTTPServer.HTTPServer(("", PORT_NUMBER), SmissyHandler)
     print time.asctime(), "Server Starts - Port {0}".format(PORT_NUMBER)
