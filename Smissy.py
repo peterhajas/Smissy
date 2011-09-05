@@ -112,7 +112,7 @@ def lookup_messages(number):
 
 def list_conversations():
     cursor.execute("select address from message")
-    addresses = defaultdict(int)
+    addresses = defaultdict(list)
     for address in cursor:
         address = address[0]
         if address:
@@ -127,8 +127,13 @@ def list_conversations():
             if len(address) > 7:
                 address = address[-7:]
 
-            addresses[address] += 1
-    return [[k,v] for k,v in addresses.iteritems() if k and v]
+            if address in addresses:
+                addresses[address][0] += 1
+            else:
+                addresses[address].append(0)
+                addresses[address].append("Tim Horton")
+
+    return [[k,v[0],v[1]] for k,v in addresses.iteritems() if k and v]
 
 class SmissyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_HEAD(s):
