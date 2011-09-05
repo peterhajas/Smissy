@@ -21,9 +21,8 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Smissy, a utility for visualizing logs on your phone.
-# Just run with a phone number and optional area code, like this:
-# $ python Smissy.py 2345678900
-# and Smissy will make an HTML file for you in the current directory and open it
+# When run, Smissy will automatically open your default browser:
+# $ python Smissy.py
 
 import sqlite3
 import sys
@@ -41,15 +40,23 @@ PORT_NUMBER = 8080
 pathToBackups = "~/Library/Application Support/MobileSync/Backup/"
 pathToBackups = os.path.expanduser(pathToBackups)
 
-# This is a terrible way to serve static files, but it'll do
-indexFile = open("index.html", "r")
-indexContent = indexFile.read()
-indexFile.close()
+staticCache = {}
 
-jqueryFile = open("jquery.js", "r")
-jqueryContent = jqueryFile.read()
-jqueryFile.close()
+def load_static_file(filename):
+    file = open(filename, "r")
+    staticCache[filename] = file.read()
+    file.close()
 
+def serve_static_file(s, path, filename, mime):
+    if s.path == path:
+        s.send_response(200)
+        s.send_header("Content-type", mime)
+        s.end_headers()
+        if not filename in staticCache:
+            load_static_file(filename)
+        s.wfile.write(staticCache[filename])
+        return True
+    return False
 
 def find_backup():
     # Find all the directories that have the SMS backup file (3d0d7e5fb2ce288813306e4d4636395e047a3d28) in them
@@ -129,18 +136,10 @@ class SmissyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         s.send_header("Content-type", "text/html")
         s.end_headers()
     def do_GET(s):
-        if s.path == "/":
-            s.send_response(200)
-            s.send_header("Content-type", "text/html")
-            s.end_headers()
-            s.wfile.write(indexContent)
-            return
-
-        if s.path == "/jquery.js":
-            s.send_response(200)
-            s.send_header("Content-type", "application/x-javascript")
-            s.end_headers()
-            s.wfile.write(jqueryContent)
+        if (serve_static_file(s, "/", "index.html", "text/html") or
+            serve_static_file(s, "/jquery.js", "jquery.js", "application/x-javascript") or
+            serve_static_file(s, "/noisy.js", "noisy.js", "application/x-javascript") or
+            serve_static_file(s, "/date.js", "date.js", "application/x-javascript")):
             return
 
         conversationRequest = re.match(r"\/conversation\/([0-9]+)$", s.path)

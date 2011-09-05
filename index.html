@@ -16,6 +16,7 @@
             .message
             {
                 border-radius: 15px 15px;
+                -moz-border-radius: 15px 15px;
                 background-color: #EEE;
                 border: 1px solid #AAA;
                 padding: 5px 15px;
@@ -25,17 +26,21 @@
                 text-shadow: -1px 1px 0px rgba(255,255,255,0.5);
                 clear: both;
                 max-width: 70%;
+                box-shadow: 0px 0px 4px rgba(0,0,0,0.3);
+                word-wrap: break-word;
             }
 
             .incoming
             {
                 background-image: -webkit-linear-gradient(#FFF, #CCC);
+                background-image: -moz-linear-gradient(#FFF, #CCC);
                 float: left;
             }
 
             .outgoing
             {
                 background-image: -webkit-linear-gradient(#CEA, #8B8);
+                background-image: -moz-linear-gradient(#CEA, #8B8);
                 float: right;
             }
 
@@ -51,8 +56,8 @@
                 position: absolute;
                 overflow: scroll;
                 left: 0px;
-                top: 0px;
-                bottom: 0px;
+                top: -1px;
+                bottom: -1px;
                 width: 20%;
                 background-color: #999;
                 margin: 0px;
@@ -75,48 +80,108 @@
 
             #conversation
             {
-                padding: 0px 10px;
+                padding: 10px 10px;
             }
 
             .address
             {
                 list-style-type: none;
-                padding: 5px;
+                padding: 5px 11px 5px 7px;
                 margin: 1px;
-                background-color: #ccc;
+                background-color: #DAE2EA;
+                background-image: -webkit-linear-gradient(#DAE2EA, #CAD2DA);
+                background-image: -moz-linear-gradient(#DAE2EA, #CAD2DA);
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -o-user-select: none;
+                user-select: none;
+            }
+
+            .selectedAddress
+            {
                 font-weight: bold;
             }
 
             .address:hover
             {
-                color: #888;
+                background-color: #CAD2DA;
+                background-image: -webkit-linear-gradient(#CAD2DA, #AAB2BA);
+                background-image: -moz-linear-gradient(#CAD2DA, #AAB2BA);
                 cursor: hand;
+                cursor: pointer;
             }
 
             .addressCount
             {
                 float: right;
-                background-color: #ddd;
+                background-color: #eaeaea;
+                color: #555;
                 border-radius: 10px;
+                -moz-border-radius: 10px;
                 border: 1px solid #aaa;
                 padding: 0px 8px;
                 font-size: 0.8em;
                 font-weight: normal;
             }
+
+            #placeholder
+            {
+                font-size: 2em;
+                color: #999;
+                text-align: center;
+                position: absolute;
+                bottom: 20px;
+                text-shadow: -1px 1px 0px rgba(255,255,255,0.8);
+            }
+
+            .dateMarker
+            {
+                padding: 5px 15px;
+                margin: 5px;
+                color: #666;
+                font-size: 0.8em;
+                display: table-cell;
+                text-shadow: -1px 1px 0px rgba(255,255,255,0.5);
+                clear: both;
+                float: left;
+                text-align: center;
+                width: 100%;
+            }
         </style>
         <script src="/jquery.js"></script>
+        <script src="/noisy.js"></script>
+        <script src="/date.js"></script>
         <script>
             function loadConversation(address)
             {
                 $.getJSON('/conversation/' + address.replace("[^0-9]", ""), function(data) {
                     $("#conversation").empty();
 
+                    var lastDate = 0;
+
                     $.each(data, function(val) {
+                        var date = data[val][2] * 1000;
+                        var dateObj = new Date(date);
+
+                        if(lastDate < date - (1000 * 60 * 15))
+                        {
+                            $("<div/>", {
+                                html: dateObj.toString("yyyy-MM-dd HH:mm"),
+                                class: "dateMarker"
+                            }).appendTo("#conversation");
+                        }
+
+                        lastDate = date;
+
                         $("<div/>", {
                             html: data[val][1],
                             class: "message " + (data[val][0] ? "outgoing" : "incoming")
                         }).appendTo("#conversation")
                     });
+
+                    $(".address").removeClass("selectedAddress");
+                    $("#"+address).addClass("selectedAddress");
                 });
             }
 
@@ -135,11 +200,26 @@
                             prettyAddress = prettyAddress.slice(0,3) + "-" + prettyAddress.slice(3);
                         }
 
-                        items.push('<div class="address" id="' + address + '" onclick="loadConversation(\'' + address + '\')">' + prettyAddress + '<div class="addressCount">' + addressCount + '</div></div>');
+                        items.push([addressCount, '<div class="address" id="' + address + '" onclick="loadConversation(\'' + address + '\')"><span class="number">' + prettyAddress + '</span><div class="addressCount">' + addressCount + '</div></div>']);
                     });
 
-                    $('#conversationList').html(items.join(''));
+                    function reverseSortFirstNumber(a,b)
+                    {
+                        return  b[0] - a[0];
+                    }
+
+                    items = items.sort(reverseSortFirstNumber);
+                    sortedItems = [];
+
+                    for(var i in items)
+                    {
+                        sortedItems[i] = items[i][1];
+                    }
+
+                    $('#conversationList').html(sortedItems.join(''));
                 });
+
+                $("#conversationWrapper").noisy({opacity : .1});
             }
         </script>
     </head>
@@ -148,6 +228,9 @@
         </div>
         <div id="conversationWrapper">
             <div id="conversation">
+                <div id="placeholder">
+                Click on a contact to view your conversations with them.
+                </div>
             </div>
         </div>
     </body>
