@@ -58,7 +58,7 @@
                 left: 0px;
                 top: -1px;
                 bottom: -1px;
-                width: 20%;
+                width: 30%;
                 background-color: #999;
                 margin: 0px;
                 padding: 0px;
@@ -68,11 +68,11 @@
             #conversationWrapper
             {
                 position: absolute;
-                left: 20%;
+                left: 30%;
                 top: 0px;
                 bottom: 0px;
                 right: 0px;
-                width: 80%;
+                width: 70%;
                 background-color: #eee;
                 overflow-y: scroll;
                 overflow-x: hidden;
@@ -200,11 +200,11 @@
                             prettyAddress = prettyAddress.slice(0,3) + "-" + prettyAddress.slice(3);
                         }
 
-						name = data[val][2];
-						if(name == "")
-						{
-							name = prettyAddress;
-						}
+                        name = data[val][2];
+                        if(name == "")
+                        {
+                            name = prettyAddress;
+                        }
 
                         items.push([addressCount, '<div class="address" id="' + address + '" onclick="loadConversation(\'' + address + '\')"><span class="number">' + name + '</span><div class="addressCount">' + addressCount + '</div></div>']);
                     });

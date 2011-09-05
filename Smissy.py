@@ -84,7 +84,7 @@ def find_backup():
     cursor = connection.cursor()
 
     return cursor
-    
+
 def find_addressbook():
     path = os.path.join(backupDirectory, "31bb7ba8914766d4ba40d6dfb6113c8b614be442")
     print path
@@ -124,12 +124,12 @@ def lookup_messages(number):
 def list_conversations():
     cursor.execute("select address from message")
     addresses = defaultdict(list)
+    names = {}
     for address in cursor:
         address = address[0]
         if address:
-            
-            name = name_for_number(address)
-            
+            full_address = address
+
             # Remove uninteresting characters (non-digits)
 
             address = re.sub("[^0-9]", "", address)
@@ -141,46 +141,43 @@ def list_conversations():
             if len(address) > 7:
                 address = address[-7:]
 
+            if not address in names:
+                names[address] = name_for_number(full_address)
+
             if address in addresses:
                 addresses[address][0] += 1
             else:
                 addresses[address].append(1)
-                addresses[address].append(name)
+                addresses[address].append(names[address])
 
     return [[k,v[0],v[1]] for k,v in addresses.iteritems() if k and v]
 
 def name_for_number(number):
     # Look up the number in the database of contacts
-    
+
     query = "select record_id from ABMultiValue where value like ?"
     nameCursor.execute(query, ("%{0}".format(number),))
     fetch = nameCursor.fetchone()
     if not fetch:
-        return number
+        return ""
     record_id = fetch[0]
 
-    query = "select First from ABPerson where ROWID like ?"
+    query = "select First,Last from ABPerson where ROWID like ?"
     nameCursor.execute(query, ("%{0}".format(record_id),))
     fetch = nameCursor.fetchone()
     if not fetch:
-        firstName = ""
+        return ""
     else:
         firstName = fetch[0]
-    
-    query = "select Last from ABPerson where ROWID like ?"
-    nameCursor.execute(query, ("%{0}".format(record_id),))
-    fetch = nameCursor.fetchone()
-    if not fetch:
-        if firstName == "":
-            return number
-        else:
+        lastName = fetch[1]
+
+        if firstName and lastName:
+            return "{0} {1}".format(firstName, lastName)
+        elif firstName and not lastName:
             return firstName
-    else:
-        lastName = fetch[0]
-        if not lastName:
-            return firstName
-        return firstName + " " + lastName
-        
+        elif not firstName:
+            return ""
+
 
 class SmissyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_HEAD(s):
