@@ -49,6 +49,9 @@ jqueryFile = open("jquery.js", "r")
 jqueryContent = jqueryFile.read()
 jqueryFile.close()
 
+noisyFile = open("noisy.js", "r")
+noisyContent = noisyFile.read()
+noisyFile.close()
 
 def find_backup():
     # Find all the directories that have the SMS backup file (3d0d7e5fb2ce288813306e4d4636395e047a3d28) in them
@@ -140,6 +143,13 @@ class SmissyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             s.send_header("Content-type", "application/x-javascript")
             s.end_headers()
             s.wfile.write(jqueryContent)
+            return
+
+        if s.path == "/noisy.js":
+            s.send_response(200)
+            s.send_header("Content-type", "application/x-javascript")
+            s.end_headers()
+            s.wfile.write(noisyContent)
             return
 
         conversationRequest = re.match(r"\/conversation\/([0-9]+)$", s.path)
