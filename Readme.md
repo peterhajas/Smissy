@@ -8,12 +8,6 @@ About
 
 Smissy is a simple python tool for visualizing your iOS SMS database backups.
 
-You pass Smissy a phone number (more on this later). With that phone number,
-Smissy generates an HTML file with the conversation you've had with that
-number. Messages you've sent are shown in green, and messages you've received
-are shown in gray. If there's been more than 10 minutes between two messages,
-a string showing the date is shown.
-
 Smissy only shows what's in your backup, so make sure you've backed up your
 device to iTunes!
 
@@ -22,11 +16,11 @@ Smissy currently only runs on OS X.
 Usage
 -----
 
-Simply run Smissy with a phone number, and optionally an area code. For example:
+Simply run Smissy:
 
-`python Smissy.py 2345678900`
+`./Smissy.py`
 
-and Smissy will take care of the rest. After the HTML file has been created, it
+and Smissy will take care of the rest! Once it has loaded your logs, Smissy
 will automatically open in your default browser.
 
 Smissy logs are best viewed in Safari or Chrome.
