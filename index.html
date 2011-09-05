@@ -51,8 +51,8 @@
                 position: absolute;
                 overflow: scroll;
                 left: 0px;
-                top: 0px;
-                bottom: 0px;
+                top: -1px;
+                bottom: -1px;
                 width: 20%;
                 background-color: #999;
                 margin: 0px;
@@ -75,7 +75,7 @@
 
             #conversation
             {
-                padding: 0px 10px;
+                padding: 10px 10px;
             }
 
             .address
@@ -83,13 +83,17 @@
                 list-style-type: none;
                 padding: 5px;
                 margin: 1px;
-                background-color: #ccc;
+                background-color: #DAE2EA;
+            }
+
+            .selectedAddress
+            {
                 font-weight: bold;
             }
 
             .address:hover
             {
-                color: #888;
+                background-color: #CAD2DA;
                 cursor: hand;
             }
 
@@ -102,6 +106,15 @@
                 padding: 0px 8px;
                 font-size: 0.8em;
                 font-weight: normal;
+            }
+
+            #placeholder
+            {
+                font-size: 2em;
+                color: #bbb;
+                text-align: center;
+                position: absolute;
+                bottom: 20px;
             }
         </style>
         <script src="/jquery.js"></script>
@@ -117,6 +130,9 @@
                             class: "message " + (data[val][0] ? "outgoing" : "incoming")
                         }).appendTo("#conversation")
                     });
+
+                    $(".address").removeClass("selectedAddress");
+                    $("#"+address).addClass("selectedAddress");
                 });
             }
 
@@ -135,10 +151,23 @@
                             prettyAddress = prettyAddress.slice(0,3) + "-" + prettyAddress.slice(3);
                         }
 
-                        items.push('<div class="address" id="' + address + '" onclick="loadConversation(\'' + address + '\')">' + prettyAddress + '<div class="addressCount">' + addressCount + '</div></div>');
+                        items.push([addressCount, '<div class="address" id="' + address + '" onclick="loadConversation(\'' + address + '\')"><span class="number">' + prettyAddress + '</span><div class="addressCount">' + addressCount + '</div></div>']);
                     });
 
-                    $('#conversationList').html(items.join(''));
+                    function reverseSortFirstNumber(a,b)
+                    {
+                        return  b[0] - a[0];
+                    }
+
+                    items = items.sort(reverseSortFirstNumber);
+                    sortedItems = [];
+
+                    for(var i in items)
+                    {
+                        sortedItems[i] = items[i][1];
+                    }
+
+                    $('#conversationList').html(sortedItems.join(''));
                 });
             }
         </script>
@@ -148,6 +177,9 @@
         </div>
         <div id="conversationWrapper">
             <div id="conversation">
+                <div id="placeholder">
+                Click on a contact to view your conversations with them.
+                </div>
             </div>
         </div>
     </body>
