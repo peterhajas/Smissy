@@ -148,6 +148,30 @@
                 text-align: center;
                 width: 100%;
             }
+
+            .innerDate
+            {
+                display: none;
+                position: absolute;
+            }
+
+            .innerDateLeft
+            {
+                left: 20px;
+            }
+
+            .innerDateRight
+            {
+                right: 20px;
+            }
+
+            .message:hover > .innerDate
+            {
+                color: #666;
+                display: block;
+                text-shadow: -1px 1px 0px rgba(255,255,255,0.5);
+                font-size: 0.8em;
+            }
         </style>
         <script src="/jquery.js"></script>
         <script src="/noisy.js"></script>
@@ -175,7 +199,7 @@
                         lastDate = date;
 
                         $("<div/>", {
-                            html: data[val][1],
+                            html: "<div class='innerDate innerDate" + (data[val][0] ? "Left" : "Right") + "'>" + dateObj.toString("HH:mm:ss") + "</div>" + data[val][1],
                             class: "message " + (data[val][0] ? "outgoing" : "incoming")
                         }).appendTo("#conversation")
                     });
