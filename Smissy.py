@@ -58,6 +58,8 @@ def serve_static_file(s, path, filename, mime):
         return True
     return False
 
+backupDirectory = ""
+
 def find_backup():
     # Find all the directories that have the SMS backup file (3d0d7e5fb2ce288813306e4d4636395e047a3d28) in them
     # We'll use these to find the largest SMS backup file
@@ -73,6 +75,7 @@ def find_backup():
             if os.path.getsize(pathToBackupFile) > largestBackupBytes:
                 largestBackupBytes = os.path.getsize(pathToBackupFile)
                 largestBackupAbsolutePath = pathToBackupFile
+                backupDirectory = os.path.join(pathToBackups, directory)
 
     # Now that we have the largest SMS backup that they have, we'll load the database
 
@@ -119,6 +122,7 @@ def list_conversations():
             # Remove uninteresting characters (non-digits)
 
             address = re.sub("[^0-9]", "", address)
+            name = "hello"
 
             # Strip area code
             # This could cause collisions, but it seems unlikely,
@@ -130,10 +134,37 @@ def list_conversations():
             if address in addresses:
                 addresses[address][0] += 1
             else:
-                addresses[address].append(0)
-                addresses[address].append("Tim Horton")
+                addresses[address].append(1)
+                addresses[address].append(name)
 
     return [[k,v[0],v[1]] for k,v in addresses.iteritems() if k and v]
+
+def name_for_number(number):
+    # Okay, this is gross.
+    # The number we receive will have no dashes or anything, we need to query several versions of this number.
+    # For example, for the number 2345678900, we need to query for every variation of that number
+    
+    name = name_for_address_string(number)
+    if name:
+        return name
+    
+    # Prepend a 1
+    name = name_for_address_string("1" + number)
+    if name:
+        return name
+        
+    # Prepend a +1
+    name = name_for_address_string("+1" + number)
+    if name:
+        return name
+
+def name_for_address_string(addressString):
+    nameConnection = sqlite3.connect(os.path.join(backupDirectory, "31bb7ba8914766d4ba40d6dfb6113c8b614be442"))
+    nameCursor = nameConnection.cursor()
+    query = "select record_id where value like ?"
+    nameCursor.execute(query, ("%{0}".format(addressString),))
+    for row in nameCursor.rows:
+        print row
 
 class SmissyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_HEAD(s):
