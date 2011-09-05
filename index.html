@@ -27,6 +27,7 @@
                 clear: both;
                 max-width: 70%;
                 box-shadow: 0px 0px 4px rgba(0,0,0,0.3);
+                word-wrap: break-word;
             }
 
             .incoming
@@ -128,16 +129,46 @@
                 bottom: 20px;
                 text-shadow: -1px 1px 0px rgba(255,255,255,0.8);
             }
+
+            .dateMarker
+            {
+                padding: 5px 15px;
+                margin: 5px;
+                color: #666;
+                font-size: 0.8em;
+                display: table-cell;
+                text-shadow: -1px 1px 0px rgba(255,255,255,0.5);
+                clear: both;
+                float: left;
+                text-align: center;
+                width: 100%;
+            }
         </style>
         <script src="/jquery.js"></script>
         <script src="/noisy.js"></script>
+        <script src="/date.js"></script>
         <script>
             function loadConversation(address)
             {
                 $.getJSON('/conversation/' + address.replace("[^0-9]", ""), function(data) {
                     $("#conversation").empty();
 
+                    var lastDate = 0;
+
                     $.each(data, function(val) {
+                        var date = data[val][2] * 1000;
+                        var dateObj = new Date(date);
+
+                        if(lastDate < date - (1000 * 60 * 15))
+                        {
+                            $("<div/>", {
+                                html: dateObj.toString("yyyy-MM-dd HH:mm"),
+                                class: "dateMarker"
+                            }).appendTo("#conversation");
+                        }
+
+                        lastDate = date;
+
                         $("<div/>", {
                             html: data[val][1],
                             class: "message " + (data[val][0] ? "outgoing" : "incoming")
