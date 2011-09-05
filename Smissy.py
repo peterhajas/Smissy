@@ -121,6 +121,20 @@ def lookup_messages(number):
 
     return messageObject
 
+def canonicalize_address(address):
+    # Remove uninteresting characters (non-digits)
+
+    address = re.sub("[^0-9]", "", address)
+
+    # Strip area code
+    # This could cause collisions, but it seems unlikely,
+    # or more likely that they're useful collisions
+
+    if len(address) > 7:
+        address = address[-7:]
+
+    return address
+
 def list_conversations():
     cursor.execute("select address from message")
     addresses = defaultdict(list)
@@ -128,21 +142,10 @@ def list_conversations():
     for address in cursor:
         address = address[0]
         if address:
-            full_address = address
-
-            # Remove uninteresting characters (non-digits)
-
-            address = re.sub("[^0-9]", "", address)
-
-            # Strip area code
-            # This could cause collisions, but it seems unlikely,
-            # or more likely that they're useful collisions
-
-            if len(address) > 7:
-                address = address[-7:]
+            address = canonicalize_address(address)
 
             if not address in names:
-                names[address] = name_for_number(full_address)
+                names[address] = name_for_number(address)
 
             if address in addresses:
                 addresses[address][0] += 1
@@ -152,15 +155,25 @@ def list_conversations():
 
     return [[k,v[0],v[1]] for k,v in addresses.iteritems() if k and v]
 
+addressBookCache = None
+
 def name_for_number(number):
+    global addressBookCache
+    # Update the address book cache
+
+    if not addressBookCache:
+        addressBookCache = {}
+        nameCursor.execute("select record_id,value from ABMultiValue")
+        for record, value in nameCursor:
+            if record and value:
+                addressBookCache[canonicalize_address(value)] = record
+
     # Look up the number in the database of contacts
 
-    query = "select record_id from ABMultiValue where value like ?"
-    nameCursor.execute(query, ("%{0}".format(number),))
-    fetch = nameCursor.fetchone()
-    if not fetch:
+    if number in addressBookCache:
+        record_id = addressBookCache[number]
+    else:
         return ""
-    record_id = fetch[0]
 
     query = "select First,Last from ABPerson where ROWID like ?"
     nameCursor.execute(query, ("%{0}".format(record_id),))
