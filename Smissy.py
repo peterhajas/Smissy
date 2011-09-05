@@ -185,7 +185,7 @@ def name_for_number(number):
         lastName = fetch[1]
 
         if firstName and lastName:
-            return "{0} {1}".format(firstName, lastName)
+            return u"{0} {1}".format(firstName, lastName)
         elif firstName and not lastName:
             return firstName
         elif not firstName:
